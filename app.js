@@ -21,12 +21,16 @@ const ifAdd = name => {
 
 Promise.all([
   vethPeer(),
-  virsh()
+  virsh(),
+  brctl(),
+  ovs()
 ])
 .then(results => {
 
   Object.keys(results[0]).forEach(key => {
     ifAdd(key);
+    ifDatabase[key].host = "veth";
+    ifDatabase[key].type = "veth";
     ifDatabase[key].peer = results[0][key];
   });
 
@@ -65,11 +69,36 @@ Promise.all([
         console.log(`  ${ifInfo.name} -> ${ifInfo.source}`);
       }
 
-
     });
   });
 
 
+  console.log("----");
+
+  const ifBrief = ifName => {
+    let info = ifDatabase[ifName];
+
+    if(info.host === "kvm") {
+      return `${ifName} (${info.hostname})`;
+    }
+    else if(info.host === "veth") {
+      return `${ifName} <> ${info.peer}`;
+    }
+  };
+
+  Object.keys(results[2]).forEach(brName => {
+    console.log(brName);
+    results[2][brName].forEach(portName => {
+      console.log(`  ${ifBrief(portName)}`);
+    });
+  });
+
+  Object.keys(results[3]).forEach(brName => {
+    console.log(brName);
+    results[3][brName].forEach(portName => {
+      console.log(`  ${ifBrief(portName)}`);
+    });
+  });
 
 
 });
